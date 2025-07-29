@@ -6,10 +6,11 @@
 #include "InterfaceHandler.h"
 #include "I2CHandler.h"
 #include "SPIHandler.h"
+#include <queue>
 
 // Event Manager (runs on Core 1)
 class EventManager {
-    std::queue<Event> event_queue;
+    std::deque<Event> event_queue;
     mutex_t queue_mutex;
     std::map<uint8_t, std::shared_ptr<DeviceDriver>> devices;
     std::unique_ptr<InterfaceHandler> i2c_handler;
@@ -37,7 +38,7 @@ public:
 
     void queue_event(const Event& event) {
         mutex_enter_blocking(&queue_mutex);
-        event_queue.push(event);
+        event_queue.push_back(event);
         mutex_exit(&queue_mutex);
     }
 
@@ -54,7 +55,7 @@ public:
             if (!event_queue.empty()) {
                 mutex_enter_blocking(&queue_mutex);
                 Event event = event_queue.front();
-                event_queue.pop();
+                event_queue.pop_front();
                 mutex_exit(&queue_mutex);
 
                 if ( handlers.count(event.type) > 0 )
@@ -68,7 +69,7 @@ public:
                     devices[event.device_address]->handle_event(event);
                 }
             }
-            tight_loop_contents(); // Yield
+            tight_loop_contents(); // Idle loop handler
         }
     }
 };

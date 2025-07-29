@@ -33,8 +33,41 @@ project(PicoCore C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Add executable. Default name is the project name, version 0.1
+set(
+    SOURCE_FILES
+    ./src/Framework.cpp
+)
 
+# Build our library for PicoCore
+add_library(
+    libPicoCore 
+    STATIC 
+    ${SOURCE_FILES}
+)
+
+# Add the standard include files to the build
+target_include_directories(libPicoCore PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/include
+)
+
+# Add any user requested libraries${CMAKE_CURRENT_LIST_DIR}
+target_link_libraries(
+    libPicoCore
+    PUBLIC 
+        hardware_spi
+        hardware_i2c
+        hardware_dma
+        hardware_pio
+        hardware_interp
+        hardware_timer
+        hardware_watchdog
+        hardware_clocks
+        pico_stdlib
+        pico_multicore
+)
+
+# Add executable. Default name is the project name, version 0.1
 add_executable(PicoCore src/PicoApplication.cpp )
 
 pico_set_program_name(PicoCore "pico_core")
@@ -45,8 +78,11 @@ pico_enable_stdio_uart(PicoCore 0)
 pico_enable_stdio_usb(PicoCore 1)
 
 # Add the standard library to the build
-target_link_libraries(PicoCore
-        pico_stdlib)
+target_link_libraries(
+    PicoCore
+    PUBLIC
+        libPicoCore
+)
 
 # Add the standard include files to the build
 target_include_directories(PicoCore PRIVATE
@@ -55,7 +91,9 @@ target_include_directories(PicoCore PRIVATE
 )
 
 # Add any user requested libraries${CMAKE_CURRENT_LIST_DIR}
-target_link_libraries(PicoCore 
+target_link_libraries(
+    PicoCore
+    PUBLIC 
         hardware_spi
         hardware_i2c
         hardware_dma
